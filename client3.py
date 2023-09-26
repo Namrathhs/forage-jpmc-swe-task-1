@@ -25,35 +25,55 @@ import urllib.request
 # Server API URLs
 QUERY = "http://localhost:8080/query?id={}"
 
-# 500 server request
+# 500 server requests
 N = 500
-
 
 def getDataPoint(quote):
     """ Produce all the needed values to generate a datapoint """
-    """ ------------- Update this function ------------- """
     stock = quote['stock']
     bid_price = float(quote['top_bid']['price'])
     ask_price = float(quote['top_ask']['price'])
-    price = bid_price
+    price = (bid_price + ask_price) / 2  # Calculate the average price
     return stock, bid_price, ask_price, price
-
 
 def getRatio(price_a, price_b):
     """ Get ratio of price_a and price_b """
-    """ ------------- Update this function ------------- """
-    return 1
-
+    if price_b == 0:
+        return None  # Avoid division by zero
+    return price_a / price_b
 
 # Main
 if __name__ == "__main__":
+    # Initialize variables for stock A and stock B
+    stock_A_data = None
+    stock_B_data = None
+
     # Query the price once every N seconds.
-    for _ in iter(range(N)):
+    for _ in range(N):
         quotes = json.loads(urllib.request.urlopen(QUERY.format(random.random())).read())
 
-        """ ----------- Update to get the ratio --------------- """
+        # Find data for Stock A and Stock B
         for quote in quotes:
             stock, bid_price, ask_price, price = getDataPoint(quote)
-            print("Quoted %s at (bid:%s, ask:%s, price:%s)" % (stock, bid_price, ask_price, price))
+            if stock == 'stockA':
+                stock_A_data = (stock, bid_price, ask_price, price)
+            elif stock == 'stockB':
+                stock_B_data = (stock, bid_price, ask_price, price)
 
-        print("Ratio %s" % getRatio(price, price))
+        # Calculate and print the ratio if both stock data is available
+        if stock_A_data and stock_B_data:
+            stock_A_name, stock_A_bid, stock_A_ask, stock_A_price = stock_A_data
+            stock_B_name, stock_B_bid, stock_B_ask, stock_B_price = stock_B_data
+            ratio = getRatio(stock_A_price, stock_B_price)
+
+            print(f"Stock A Info: {stock_A_name} (bid:{stock_A_bid}, ask:{stock_A_ask}, price:{stock_A_price})")
+            print(f"Stock B Info: {stock_B_name} (bid:{stock_B_bid}, ask:{stock_B_ask}, price:{stock_B_price})")
+            if ratio is not None:
+                print(f"Price Ratio (Stock A / Stock B): {ratio}")
+            else:
+                print("Price Ratio (Stock A / Stock B): Cannot be calculated (Stock B price is zero)")
+
+            # Reset the stock data
+            stock_A_data = None
+            stock_B_data = None
+
